@@ -31,11 +31,11 @@ PUB Start
   dira[4]~      ''RX Line
   byte[outbuffer][0] := $06 'Number of bytes
   byte[outbuffer][1] := $01 'Device Address
-  byte[outbuffer][2] := $03 'Read Command
+  byte[outbuffer][2] := $06 'Write Command
   byte[outbuffer][3] := $00 'Start Address High Byte
-  byte[outbuffer][4] := $64 'Start Address Low Byte
+  ''byte[outbuffer][4] := $64 'Start Address Low Byte
   byte[outbuffer][5] := $00 'Quantity High Byte
-  byte[outbuffer][6] := $01 'Quantity Low Byte
+  ''byte[outbuffer][6] := $01 'Quantity Low Byte
   Comm.Clear
   SendReceive
   
@@ -50,8 +50,16 @@ PUB SendReceive | ExeceptionCode, FrameEndCountOffset, FrameEndFlag,i,FrameEndTg
   idx := 1  
   Repeat
     Comm.NewLine
-    Comm.Str(string("Press Enter to Start",13))
-    Transmit := Comm.HEXIN
+    Comm.Str(string("Register?",13))
+    byte[outbuffer][4] := Comm.DECIN
+    byte[outbuffer][4] :=     byte[outbuffer][4] - 1
+    Comm.NewLine
+    Comm.Str(string("High Value?",13))
+    byte[outbuffer][5] := Comm.DECIN
+    Comm.NewLine
+    Comm.Str(string("Low Value?",13))
+    byte[outbuffer][6] := Comm.DECIN
+    Comm.BIN(byte[outbuffer][6],8)
     GenCRC
 
     outa[3]~~
@@ -86,10 +94,6 @@ PUB SendReceive | ExeceptionCode, FrameEndCountOffset, FrameEndFlag,i,FrameEndTg
           Comm.Str(string(" Test HEX = ")) 
           Comm.HEX(inbuffer[i],2)
         SendReceive
-
-PUB EvalData
-
-
 
 PUB GenCRC|i
   CRCVal := 0
