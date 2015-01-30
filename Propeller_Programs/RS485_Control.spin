@@ -15,7 +15,7 @@ VAR
    Long idx
    Long RChar
    Long CRCval
-
+   Long Setpoint
 
 OBJ
 
@@ -50,16 +50,26 @@ PUB SendReceive | ExeceptionCode, FrameEndCountOffset, FrameEndFlag,i,FrameEndTg
   idx := 1  
   Repeat
     Comm.NewLine
+    Comm.Str(string("Function?",13))
+    byte[outbuffer][2] :=Comm.DECIN
+    Comm.NewLine
     Comm.Str(string("Register?",13))
     byte[outbuffer][4] := Comm.DECIN
     byte[outbuffer][4] :=     byte[outbuffer][4] - 1
-    Comm.NewLine
-    Comm.Str(string("High Value?",13))
-    byte[outbuffer][5] := Comm.DECIN
-    Comm.NewLine
-    Comm.Str(string("Low Value?",13))
-    byte[outbuffer][6] := Comm.DECIN
-    Comm.BIN(byte[outbuffer][6],8)
+    if byte[outbuffer][4] == 103
+      Comm.Newline
+      Comm.Str(string("Enter setpoint.",13))
+      Setpoint := Comm.DECIN
+      byte[outbuffer][6] := Setpoint & %1111_1111
+      byte[outbuffer][5] := Setpoint >> 8
+    else
+      Comm.NewLine
+      Comm.Str(string("High Value?",13))
+      byte[outbuffer][5] := Comm.DECIN
+      Comm.NewLine
+      Comm.Str(string("Low Value?",13))
+      byte[outbuffer][6] := Comm.DECIN
+      Comm.BIN(byte[outbuffer][6],8)
     GenCRC
 
     outa[3]~~
