@@ -50,24 +50,24 @@ PUB SendReceive | ExeceptionCode, FrameEndCountOffset, FrameEndFlag,i,FrameEndTg
   idx := 1  
   Repeat
     Comm.NewLine
-    Comm.Str(string("Function?",13))
+    Comm.Str(string("Function?"))
     byte[outbuffer][2] :=Comm.DECIN
     Comm.NewLine
-    Comm.Str(string("Register?",13))
+    Comm.Str(string("Register?"))
     byte[outbuffer][4] := Comm.DECIN
     byte[outbuffer][4] :=     byte[outbuffer][4] - 1
     if byte[outbuffer][4] == 103
       Comm.Newline
-      Comm.Str(string("Enter setpoint.",13))
+      Comm.Str(string("Enter setpoint."))
       Setpoint := Comm.DECIN
       byte[outbuffer][6] := Setpoint & %1111_1111
       byte[outbuffer][5] := Setpoint >> 8
     else
       Comm.NewLine
-      Comm.Str(string("High Value?",13))
+      Comm.Str(string("High Value?"))
       byte[outbuffer][5] := Comm.DECIN
       Comm.NewLine
-      Comm.Str(string("Low Value?",13))
+      Comm.Str(string("Low Value?"))
       byte[outbuffer][6] := Comm.DECIN
       Comm.BIN(byte[outbuffer][6],8)
     GenCRC
