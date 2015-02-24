@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <title>Circulator Data Viewer</title>
+        <!-- EXTERNAL LIBS-->
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+        <script src="http://www.google.com/jsapi"></script>
+        <script type="text/javascript">
+            var externalURL = "zqTumkQCgzGe";
+             // phant stream public key
+            var public_key = 'qrZlZa6jDGilBPdmxp1kcBXPNNNx';
+             // Expecting 14 data streams (a,b,c,d,e,f,g,h,i,j,k,l,m,n)
+             // load chart lib      
+            google.load('visualization', '1', {
+                    'packages': ['annotationchart']
+                });
+             // call drawChart once google charts is loaded
+            google.setOnLoadCallback(init);
+
+            function init() {
+                chart1();
+                chart2();
+                chart3();
+                chart4();
+                loadStats();
+                poll();
+            }
+             // onload callback
+
+            function chart1() {
+
+                // JSONP request
+                var jsonData = $.ajax({
+                        url: 'http://54.149.20.212/output/' + public_key + '.json',
+                        data: {
+                            page: 1
+                        },
+                        dataType: 'jsonp',
+                    }).done(function(results) {
+
+                        var data = new google.visualization.DataTable();
+
+                        data.addColumn('datetime', 'Time');
+                        data.addColumn('number', 'GPM');
+                        data.addColumn('number', 'Ft');
+                        data.addColumn('number', 'Diff Ft');
+
+                        $.each(results, function(i, row) {
+                            data.addRow([
+                                    (new Date(row.timestamp)),
+                                    parseFloat(row.a),
+                                    parseFloat(row.b),
+                                    parseFloat(row.c),
+                                ]);
+                        });
+                        var options = {
+                            'displayAnnotations': true,
+                            'displayZoomButtons': false,
+                            'min': 0,
+                            'scaleType': 'maximized'
+                        };
+                        var chartA = new google.visualization.AnnotationChart(document.getElementById('chart_div1'));
+                        chartA.draw(data, options);
+                    });
+
+            }
+
+            function chart2() {
+
+                // JSONP request
+                var jsonData2 = $.ajax({
+                        url: 'http://54.149.20.212/output/' + public_key + '.json',
+                        data: {
+                            page: 1
+                        },
+                        dataType: 'jsonp',
+                    }).done(function(results) {
+
+                        var data2 = new google.visualization.DataTable();
+
+                        data2.addColumn('datetime', 'Time');
+                        data2.addColumn('number', 'Feedback');
+                        data2.addColumn('number', 'Liquid Temp');
+                        data2.addColumn('number', 'Actual Setpoint');
+
+                        $.each(results, function(i, row) {
+                            data2.addRow([
+                                    (new Date(row.timestamp)),
+                                    parseFloat(row.d),
+                                    parseFloat(row.e),
+                                    parseFloat(row.f),
+                                ]);
+                        });
+                        var options2 = {
+                            'displayAnnotations': true,
+                            'displayZoomButtons': false,                
+                            'min': 0,
+                            'max': 100,
+                            'scaleType': 'allmaximized'
+                        };
+                        var chartB = new google.visualization.AnnotationChart(document.getElementById('chart_div2'));
+                        chartB.draw(data2, options2);
+                    });
+
+            }
+
+            function chart3() {
+
+                // JSONP request
+                var jsonData3 = $.ajax({
+                        url: 'http://54.149.20.212/output/' + public_key + '.json',
+                        data: {
+                            page: 1
+                        },
+                        dataType: 'jsonp',
+                    }).done(function(results) {
+
+                        var data3 = new google.visualization.DataTable();
+
+                        data3.addColumn('datetime', 'Time');
+                        data3.addColumn('number', 'Outdoor Temp');
+                        data3.addColumn('number', 'Temp Sensor 1');
+                        data3.addColumn('number', 'Temp Sensor 2');
+                        data3.addColumn('number', 'Temp Sensor 3');
+                        data3.addColumn('number', 'Light Sensor');                        
+
+                        $.each(results, function(i, row) {
+                            data3.addRow([
+                                    (new Date(row.timestamp)),
+                                    parseFloat(row.g),
+                                    parseFloat(row.k),
+                                    parseFloat(row.l),
+                                    parseFloat(row.m),
+                                    parseFloat(row.n),
+                                ]);
+                        });
+                        var options3 = {
+                            'displayAnnotations': true,
+                            'displayZoomButtons': false,
+                            'min': 0,
+                            'max': 100,
+                            'scaleType': 'maximized',
+                            'scaleColumns': [0, 1, 2,3,4]                            
+                        };
+                        var chartC = new google.visualization.AnnotationChart(document.getElementById('chart_div3'));
+                        chartC.draw(data3, options3);
+                    });
+
+            }
+
+
+            function chart4() {
+
+                // JSONP request
+                var jsonData4 = $.ajax({
+                        url: 'http://54.149.20.212/output/' + public_key + '.json',
+                        data: {
+                            page: 1
+                        },
+                        dataType: 'jsonp',
+                    }).done(function(results) {
+
+                        var data4 = new google.visualization.DataTable();
+
+                        data4.addColumn('datetime', 'Time');
+                        data4.addColumn('number', 'RPM');
+                        data4.addColumn('number', 'Watts');
+                        data4.addColumn('number', 'Current');
+
+                        $.each(results, function(i, row) {
+                            data4.addRow([
+                                    (new Date(row.timestamp)),
+                                    parseFloat(row.h),
+                                    parseFloat(row.i),
+                                    parseFloat(row.j),
+                                ]);
+                        });
+                        var options4 = {
+                            'displayAnnotations': true,
+                            'displayZoomButtons': false,                
+                            'min': 0,
+                            'scaleType': 'allmaximized',
+                            'scaleColumns': [0, 1, 2]
+                        };
+                        var chartD = new google.visualization.AnnotationChart(document.getElementById('chart_div4'));
+                        chartD.draw(data4, options4);
+                    });
+
+            }
+
+            function loadStats() {
+                $.ajax({
+                        url: 'http://54.149.20.212/output/' + public_key + '/stats.json',
+                        jsonp: 'callback',
+                        cache: true,
+                        dataType: 'jsonp',
+                        success: function(response) {
+                            $("#pageCount").html(response.pageCount);
+                            var test1 = response.used / 10485.76;
+                            test1 = (Math.round(test1)) / 100;
+                            $("#used").html(test1);
+                            var test2 = response.remaining / 10485.76;
+                            test2 = (Math.round(test2)) / 100;
+                            $("#remaining").html(test2);
+                            var test3 = response.cap / 1048576;
+                            $("#cap").html(test3);
+                            console.log(response);
+                        }
+                    });
+            }
+
+            function poll() {
+                // Construct an ajax() GET request.
+                // http://www.w3schools.com/jquery/ajax_ajax.asp
+
+                $.ajax({
+                        type: "get",
+                        url: "https://agent.electricimp.com/" + externalURL, // URL of our imp agent.
+                        dataType: "json", // Expect JSON-formatted response from agent.
+                        success: function(agentMsg) { // Function to run when request succeeds.
+                            $("#controlMode").html(agentMsg.controlMode);
+                            $("#operationMode").html(agentMsg.operationMode);
+                            $("#sensorRange").html(agentMsg.sensorRange);
+                            $("#warnCode").html(agentMsg.warnCode);
+                            $("#alarmCode").html(agentMsg.alarmCode);
+                            console.log(agentMsg);
+                        },
+                        error: function(err) {
+                            console.log("err" + err.status)
+                        }
+                    });
+            }
+        </script>
+
+
+    </head>
+
+    <body>
+        <img src="https://docs.google.com/drawings/d/1GEYC08x_l1EizXWKcfLVUrO9KjU_np-lt1YTi7hoXfg/pub?w=1000&h=100">
+        <div id="chart_div1" style='width: 1000px; height: 300px;'></div>
+        <p></p>
+        <div id="chart_div2" style='width: 1000px; height: 300px;'></div>
+        <p></p>
+        <div id="chart_div3" style='width: 1000px; height: 300px;'></div>
+        <p></p>
+        <div id="chart_div4" style='width: 1000px; height: 300px;'></div>        
+        <div id="pins"></div>
+        <p style="font-size: 10px; font-family: Verdana"> <b>Control Mode :</b>  <span id="controlMode"></span>
+        </p>
+        <p style="font-size: 10px; font-family: Verdana"> <b>Operation Mode :</b>  <span id="operationMode"></span>
+        </p>
+        <p style="font-size: 10px; font-family: Verdana"> <b>Sensor Range :</b>  <span id="sensorRange"></span>
+        </p>
+        <p style="font-size: 10px; font-family: Verdana"> <b>Warning Code :</b>  <span id="warnCode"></span>
+        </p>
+        <p style="font-size: 10px; font-family: Verdana"> <b>Alarm Code :</b>  <span id="alarmCode"></span>
+        </p>
+        <p style="font-size: 10px; font-family: Verdana"> <b>Page Count :</b>  <span id="pageCount"></span>
+        </p>
+        <p style="font-size: 10px; font-family: Verdana"> <b>Used :</b>  <span id="used"></span> Mb</p>
+        <p style="font-size: 10px; font-family: Verdana"> <b>Remaining :</b>  <span id="remaining"></span> Mb</p>
+        <p style="font-size: 10px; font-family: Verdana"> <b>Cap :</b>  <span id="cap"></span> Mb</p>
+         <a style="font-size: 10px; font-family: Verdana" href="http://54.149.20.212/output/qrZlZa6jDGilBPdmxp1kcBXPNNNx.csv">Download .CSV File</a> 
+    </body>
+
+</html>
