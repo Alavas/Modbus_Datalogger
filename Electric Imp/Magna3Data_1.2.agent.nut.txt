@@ -1,0 +1,212 @@
+/*
+Magna3 Live Data Viewer
+Copyright (c) 2015 Justin Savala
+
+Based on Weather Station using the Electric Imp by Nathan Seidle of Sparkfun Electronics.
+
+  Terms of Use: MIT License
+  Permission is hereby granted, free of charge, to any person obtaining a copy of this
+  software and associated documentation files (the "Software"), to deal in the Software
+  without restriction, including without limitation the rights to use, copy, modify,
+  merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+  permit persons to whom the Software is furnished to do so, subject to the following
+  conditions:
+  The above copyright notice and this permission notice shall be included in all copies
+  or substantial portions of the Software.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+  INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+  PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+  HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+  CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+*/
+
+// Phant Keys //
+local publicKey = “Insert Key Here”; // Your Phant public key
+local privateKey = “Insert Key Here”; // The Phant private key
+local phantServer = “Insert Phant URL”; // Your Phant server, base URL, no HTTP
+// Wunderground Key //
+local testKey = "http://api.wunderground.com/api/Insert_Key_Here/conditions/q/FL/Apopka.json";
+
+// Variables //
+local controlMode = 0;
+local operationMode = 0;
+local warnCode = 0;
+local alarmCode = 0;
+local sensorRange = 0;
+local userSet = 0;
+local actualSet = 0;
+local processFeedback = 0;
+local Flow = 0;
+local Head = 0;
+local diffHead = 0;
+local liquidTemp = 0;
+local elecTemp = 0;
+local Speed = 0;
+local Frequency = 0;
+local Performance = 0;
+local Watts = 0;
+local Current = 0;
+local OnOff = 0;
+local digitalIn = 0;
+local digitalOut = 0;
+local temp1 = 0;
+local temp2 = 0;
+local temp3 = 0;
+local light = 0;
+
+local warnFlag = 0;
+local alarmFlag = 0;
+local temperature;
+
+
+function mysplit(a, b)
+{
+  local ret = [];
+  local field = "";
+  foreach(c in a) {
+      if (c == b) {
+          // found separator, push field
+          ret.push(field);
+          field="";
+      } else {
+          field += c.tochar(); // append to field
+      }
+   }
+   // Push the last field
+   ret.push(field);
+   return ret;
+}
+
+device.on("postToInternet", function(dataString) 
+{
+    //Break the incoming string into pieces by comma
+    server.log(dataString);
+    a <- mysplit(dataString,',');
+    
+    if(a[0] != "$" || a[22] != "#")
+    {
+        server.log(format("Error: incorrect frame received (%s, %s)", a[0], a[22]));
+        server.log(format("Received: %s)", dataString));
+        return(0);
+    }
+
+    //a[0] is $
+    controlMode = a[1];
+    operationMode = a[2];
+    warnCode = a[3];
+    alarmCode = a[4];
+    sensorRange = a[5];
+    userSet = a[6];
+    actualSet = a[7];
+    processFeedback = a[8];
+    Flow = a[9];
+    Head = a[10];
+    diffHead = a[11];
+    liquidTemp = a[12];
+    Speed = a[13];
+    Frequency = a[14];
+    Performance = a[15];
+    Watts = a[16];
+    Current = a[17];
+    temp1 = a[18];
+    temp2 = a[19];
+    temp3 = a[20];
+    light = a[21];
+    //a[22] is #
+    
+    
+    local dataSend = "";
+    dataSend = "a=" + Flow;
+    dataSend += "&b=" + Head;
+    dataSend += "&c=" + diffHead;
+    dataSend += "&d=" + processFeedback; 
+    dataSend += "&e=" + liquidTemp; 
+    dataSend += "&f=" + actualSet; 
+    dataSend += "&g=" + temperature.temp_f; 
+    dataSend += "&h=" + Speed; 
+    dataSend += "&i=" + Watts; 
+    dataSend += "&j=" + Current; 
+    dataSend += "&k=" + temp1;
+    dataSend += "&l=" + temp2;
+    dataSend += "&m=" + temp3;
+    dataSend += "&n=" + light;
+    
+    server.log(liquidTemp);
+    server.log("Sending " + dataSend); // Print a debug message
+    local phantURL = "http://" +  phantServer + "/input/" + publicKey;
+    local phantHeaders = {"Phant-Private-Key": privateKey, "connection": "close"};
+    local request = http.post(phantURL, phantHeaders, dataSend);
+    local response = request.sendsync();
+    server.log("Phant response: " + response.body); 
+    
+
+    if (warnFlag==0 && warnCode!="No Faults")
+    {
+        server.log("Warning!");
+        //mailgun("Magna3 Warning",warnCode);
+        warnFlag = 1;
+    }
+    if (warnCode == "No Faults")
+    {
+      warnFlag = 0;
+    }
+
+    if (alarmFlag==0 && alarmCode!="No Faults")
+    {
+        server.log("Alarm!");
+        //mailgun("Magna3 Alarm",alarmCode);
+        alarmFlag = 1;
+    }
+    if (alarmCode == "No Faults")
+    {
+      alarmFlag = 0;
+    }
+    //server.log(warnCode);
+    //server.log(alarmCode);
+    //server.log("Alarm Flag = " + alarmFlag);
+
+    
+});
+
+function respondImpValues(request,response){
+
+    // JSON table.
+    local pinTable = {
+        "controlMode": ""+controlMode+"",    
+        "operationMode": ""+operationMode+"", 
+        "sensorRange": ""+sensorRange+"",
+        "warnCode": ""+warnCode+"",
+        "alarmCode": ""+alarmCode+"",        
+    }
+    local jvars = http.jsonencode(pinTable);
+    response.header("Access-Control-Allow-Origin", "*");
+    response.send(200,jvars);
+    server.log("POSTED!");
+}
+
+function mailgun(subject, message){
+  server.log("Send Message");
+  local from = “test@test.com”;
+  local to   = “test@test.com”;
+ 
+  local apikey = “Insert Mail-Gun Key Here”;
+  local domain = “Insert_Mail-Gun_Domain_Here.mailgun.org";
+ 
+  local request = http.post("https://api:" + apikey + "@api.mailgun.net/v2/" + domain + "/messages", {"Content-Type": "application/x-www-form-urlencoded"}, "from=" + from + "&to=" + to + "&subject=" + subject + "&text=" + message);
+  local response = request.sendsync();
+  server.log("Mailgun response: " + response.body);
+}
+
+device.on("weather",function(timeFlag){
+    // Only gets Weather data when flag is set.
+    local request2 = http.get(testKey);
+    local response2 = request2.sendsync();
+    local res = http.jsondecode(response2.body);
+    temperature = res.current_observation;
+    server.log(temperature.temp_f + " F -> Outdoor Temp Updated");
+    server.log(temperature.wind_mph + " MPH");
+});
+
+http.onrequest(respondImpValues);

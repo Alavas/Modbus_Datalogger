@@ -1,0 +1,158 @@
+/*
+Magna3 Live Data Viewer
+Copyright (c) 2015 Justin Savala
+
+Based on Weather Station using the Electric Imp by Nathan Seidle of Sparkfun Electronics.
+
+  Terms of Use: MIT License
+  Permission is hereby granted, free of charge, to any person obtaining a copy of this
+  software and associated documentation files (the "Software"), to deal in the Software
+  without restriction, including without limitation the rights to use, copy, modify,
+  merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+  permit persons to whom the Software is furnished to do so, subject to the following
+  conditions:
+  The above copyright notice and this permission notice shall be included in all copies
+  or substantial portions of the Software.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+  INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+  PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+  HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+  CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+*/
+propeller <- hardware.uart57;
+channel1 <- hardware.pin1;
+channel2 <- hardware.pin2;
+channel3 <- hardware.pin9;
+
+local d = " ";
+local timeFlag = 36;
+local temp1 = 0;
+local temp2 = 0;
+local temp3 = 0;
+local light = 0;
+local NOCHAR = -1;
+
+const b_therm = 3950.0;
+const t0_therm = 298.15;
+const R2 = 10000.0;
+
+function initUart()
+{
+    hardware.configure(UART_57);    
+    propeller.configure(9600, 8, PARITY_NONE, 1, NO_CTSRTS);
+}
+
+
+function serialRead() {
+    propeller.flush();
+    //Ping the Propeller to request new data.
+    propeller.write("!");
+
+    //Wait for initial character to come in
+    local counter = 0;
+
+    local result = NOCHAR;
+    while(result == NOCHAR)
+    {
+        result = propeller.read(); //Wait for a new character to arrive
+
+        imp.sleep(0.01);
+        if(counter++ > 200) //2 seconds
+        {
+            server.log("Serial timeout error initial");
+            return(0); //Bail after 2000ms max wait 
+        }
+    }
+    // Collect bytes
+    d = "";
+    while (result != '\n')  // Keep reading until we see a newline
+    {
+        counter = 0;
+        while(result == NOCHAR)
+        {
+            result = propeller.read();
+    
+            if(result == NOCHAR)
+            {
+                imp.sleep(0.01);
+                if(counter++ > 50) //Wait no more than 20ms for another character
+                {
+                    server.log("Serial timeout error");
+                    server.log(d);
+                    return(0); //Bail after 20ms max wait 
+                }
+            }
+        }
+
+        d += format("%c", result);
+        result = propeller.read(); //Grab the next character in the que
+    }
+
+}
+
+function mainprog(){
+    light = hardware.lightlevel();
+    temp1 = channel1.read();
+    temp1 = getTemp(temp1);
+    temp2 = channel2.read();
+    temp2 = getTemp(temp2);
+    temp3 = channel3.read();
+    temp3 = getTemp(temp3);
+    
+    server.log(temp1 + "F");
+    server.log(temp2 + "F");
+    server.log(temp3 + "F");
+    
+    serialRead();
+    d += temp1 + ",";
+    d += temp2 + ",";
+    d += temp3 + ",";
+    d += light + ",";
+    d += "#";
+    server.log(d);
+    agent.send("postToInternet",d);
+
+    if (timeFlag == 36)
+        {
+            agent.send("weather",timeFlag);
+            timeFlag = 0;
+        }
+    else
+        {
+            timeFlag = timeFlag + 1;
+        }
+    imp.wakeup(5.0,mainprog);    
+}
+
+function getTemp(channel){
+    local Vin = hardware.voltage();
+    local Vout = Vin * channel / 65535.0;
+    local R_Therm = (R2*Vin / Vout) - R2;
+    local ln_therm = math.log(10000.0 / R_Therm);
+    local temp_K = (t0_therm * b_therm) / (b_therm - t0_therm*ln_therm);
+    local temp_C = temp_K - 273.15;
+    local temp_F = temp_C * 9.0 / 5.0 + 32.0;
+    temp_F = round(temp_F,2)
+    
+    return temp_F;
+}
+
+function round(val, decimalPoints) {
+    local f = math.pow(10, decimalPoints) * 1.0;
+    local newVal = val * f;
+    newVal = math.floor(newVal + 0.5)
+    newVal = (newVal * 1.0) / f;
+ 
+   return newVal;
+}
+
+// Setup
+channel1.configure(ANALOG_IN);
+channel2.configure(ANALOG_IN);
+channel3.configure(ANALOG_IN);
+server.log("Serial Pipeline Open!"); 
+initUart();
+imp.sleep(3.0);
+mainprog();
